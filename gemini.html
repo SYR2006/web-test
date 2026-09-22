@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2026 by anonymous (http://jsbin.com/namajoseno/3/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>扁平科技風碼表 - TECH CHRONO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tech: {
+              bg: '#0B0F19',
+              card: '#111827',
+              surface: '#1E293B',
+              border: '#334155',
+              cyan: '#06B6D4',
+              cyanGlow: '#22D3EE',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E'
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Courier New', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* 科技網格背景 */
+    .tech-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(51, 65, 85, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
+    }
+
+    /* 扁平微發光陰影 */
+    .glow-cyan {
+      box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.25);
+    }
+    .glow-amber {
+      box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.25);
+    }
+
+    /* 數字等寬防抖動 */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="bg-tech-bg text-slate-100 min-h-screen font-sans tech-grid flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+
+  <header class="w-full border-b border-tech-border/60 bg-tech-card/80 backdrop-blur px-6 py-4">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="13" r="8" stroke-width="2"/>
+            <path stroke-width="2" stroke-linecap="round" d="M12 9v4l2.5 2.5M12 5V2M10 2h4M5 5l2 2M19 5l-2 2"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-semibold tracking-wider text-slate-100 flex items-center gap-2">
+            CHRONO<span class="text-cyan-400 font-mono text-xs px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">V2.4</span>
+          </h1>
+          <p class="text-xs text-slate-400">高精度扁平化科技碼表</p>
+        </div>
+      </div>
+
+      <!-- 系統當前狀態指示 -->
+      <div class="flex items-center space-x-2 bg-tech-surface/80 border border-tech-border px-3 py-1.5 rounded-full text-xs font-mono">
+        <span id="systemLed" class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>
+        <span id="systemStatusText" class="text-slate-300 font-medium tracking-wide">STANDBY</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-2xl mx-auto px-4 py-8 flex flex-col items-center justify-center flex-grow">
+    
+    <!-- 主儀表卡片 -->
+    <div class="w-full bg-tech-card border border-tech-border rounded-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+      <!-- 角落科技標記裝飾 -->
+      <div class="absolute top-2 left-2 text-[10px] font-mono text-slate-600 select-none">SYS//01</div>
+      <div class="absolute top-2 right-2 text-[10px] font-mono text-slate-600 select-none">100HZ.SYNC</div>
+      <div class="absolute bottom-2 left-2 text-[10px] font-mono text-slate-600 select-none">STATE_ENGINE</div>
+      <div class="absolute bottom-2 right-2 text-[10px] font-mono text-slate-600 select-none">READY</div>
+
+      <!-- 環形視覺與時間刻度進度條 -->
+      <div class="w-full bg-tech-surface/60 rounded-full h-1.5 mb-8 overflow-hidden border border-slate-700/50">
+        <div id="techProgress" class="bg-gradient-to-r from-cyan-500 to-cyan-300 h-full w-0 transition-all duration-75"></div>
+      </div>
+
+      <!-- 核心數字顯示區 -->
+      <div class="flex flex-col items-center justify-center my-4 select-none">
+        <div class="text-xs uppercase font-mono tracking-widest text-slate-400 mb-2 flex items-center gap-2">
+          <span>HRS</span><span class="text-cyan-500">:</span>
+          <span>MIN</span><span class="text-cyan-500">:</span>
+          <span>SEC</span><span class="text-cyan-500">.</span>
+          <span>MS</span>
+        </div>
+
+        <div class="flex items-baseline justify-center font-mono font-bold tracking-tight text-white tabular-nums">
+          <span id="displayHours" class="text-4xl sm:text-6xl text-slate-300">00</span>
+          <span class="text-3xl sm:text-5xl text-cyan-400 mx-1">:</span>
+          <span id="displayMinutes" class="text-4xl sm:text-6xl text-slate-200">00</span>
+          <span class="text-3xl sm:text-5xl text-cyan-400 mx-1">:</span>
+          <span id="displaySeconds" class="text-4xl sm:text-6xl text-cyan-300">00</span>
+          <span class="text-2xl sm:text-4xl text-cyan-400 ml-1">.</span>
+          <span id="displayMilliseconds" class="text-2xl sm:text-4xl text-cyan-400/90 w-[2.2ch] text-left">00</span>
+        </div>
+      </div>
+
+      <!-- 控制按鈕區（嚴格依照流程圖邏輯） -->
+      <div class="grid grid-cols-2 gap-4 mt-10">
+        
+        <!-- 開始 / 暫停 主切換按鈕 -->
+        <button
+          id="btnToggle"
+          class="relative group py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border bg-cyan-500 hover:bg-cyan-400 text-slate-950 border-cyan-400 glow-cyan active:scale-[0.98]"
+        >
+          <span id="btnToggleIcon">
+            <!-- 播放圖示 -->
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </span>
+          <span id="btnToggleText" class="font-semibold">開始計時</span>
+        </button>
+
+        <!-- 重置按鈕 (預設 disabled) -->
+        <button
+          id="btnReset"
+          disabled
+          class="py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border border-tech-border bg-tech-surface/40 text-slate-500 cursor-not-allowed disabled:opacity-40 disabled:hover:bg-tech-surface/40 active:scale-[0.98]"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span id="btnResetText" class="font-semibold">重置歸零</span>
+        </button>
+      </div>
+
+      <!-- 次要輔助按鈕：計圈 (Lap) -->
+      <div class="mt-4 flex justify-between items-center pt-4 border-t border-tech-border/40">
+        <button
+          id="btnLap"
+          disabled
+          class="text-xs font-mono py-1.5 px-3 rounded-lg border border-slate-700 bg-slate-800/40 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          標記計圈 (LAP)
+        </button>
+
+        <span class="text-[11px] text-slate-500 font-mono">快捷鍵: 空白鍵 (開始/暫停) · R (重置)</span>
+      </div>
+
+    </div>
+
+    <!-- 視覺化流程圖狀態 HUD (對應使用者的 Mermaid 流程圖) -->
+    <div class="w-full bg-tech-card/60 border border-tech-border/80 rounded-xl p-4 mt-6">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-mono font-semibold text-slate-400 tracking-wider flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+          狀態流程機即時對映 (FLOWCHART STATE)
+        </span>
+        <span id="currentStateBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+          A: 進入首頁
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+        <div id="flowNodeInit" class="p-2.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 transition-all">
+          <div class="font-bold">A [首頁初始化]</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">重置按鈕: disabled</div>
+        </div>
+        <div id="flowNodeClock" class="p-2.5 rounded-lg border border-tech-border bg-tech-surface/30 text-slate-400 transition-all">
+          <div class="font-bold">Clock [正在計時]</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">按鈕:「暫停」 / 重置: enabled</div>
+        </div>
+        <div id="flowNodePause" class="p-2.5 rounded-lg border border-tech-border bg-tech-surface/30 text-slate-400 transition-all">
+          <div class="font-bold">Pause [暫停狀態]</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">按鈕:「開始」 / 重置: enabled</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 計圈記錄列表 -->
+    <div id="lapSection" class="w-full bg-tech-card/40 border border-tech-border/60 rounded-xl p-4 mt-4 hidden">
+      <div class="flex justify-between items-center mb-2 pb-1 border-b border-tech-border/50 text-xs font-mono text-slate-400">
+        <span>圈數</span>
+        <span>單圈時間</span>
+        <span>累計時間</span>
+      </div>
+      <div id="lapList" class="max-h-40 overflow-y-auto space-y-1 pr-1 font-mono text-xs"></div>
+    </div>
+
+  </main>
+
+  <footer class="w-full border-t border-tech-border/40 py-3 text-center text-xs text-slate-500 font-mono">
+    <span>FLAT TECH TIMER • PRECISION 10ms</span>
+  </footer>
+
+  <script>
+    // 碼表邏輯狀態變數
+    let startTime = 0;
+    let elapsedTime = 0;
+    let timerInterval = null;
+    let isRunning = false;
+    let lapCount = 0;
+    let lastLapTime = 0;
+
+    // DOM 元素選取
+    const displayHours = document.getElementById('displayHours');
+    const displayMinutes = document.getElementById('displayMinutes');
+    const displaySeconds = document.getElementById('displaySeconds');
+    const displayMilliseconds = document.getElementById('displayMilliseconds');
+    const techProgress = document.getElementById('techProgress');
+
+    const btnToggle = document.getElementById('btnToggle');
+    const btnToggleText = document.getElementById('btnToggleText');
+    const btnToggleIcon = document.getElementById('btnToggleIcon');
+    const btnReset = document.getElementById('btnReset');
+    const btnLap = document.getElementById('btnLap');
+
+    const systemLed = document.getElementById('systemLed');
+    const systemStatusText = document.getElementById('systemStatusText');
+    const currentStateBadge = document.getElementById('currentStateBadge');
+    const flowNodeInit = document.getElementById('flowNodeInit');
+    const flowNodeClock = document.getElementById('flowNodeClock');
+    const flowNodePause = document.getElementById('flowNodePause');
+
+    const lapSection = document.getElementById('lapSection');
+    const lapList = document.getElementById('lapList');
+
+    // Web Audio 合成音效（輕量科技嗶聲，無外部依賴）
+    let audioCtx = null;
+    function playBeep(freq = 880, duration = 0.05, type = 'sine') {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // 音效靜音忽略
+      }
+    }
+
+    // 格式化毫秒為時間字串對象
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const centiseconds = Math.floor((ms % 1000) / 10);
+
+      return {
+        hours: String(hours).padStart(2, '0'),
+        minutes: String(minutes).padStart(2, '0'),
+        seconds: String(seconds).padStart(2, '0'),
+        milliseconds: String(centiseconds).padStart(2, '0')
+      };
+    }
+
+    // 更新介面時間
+    function updateDisplay(ms) {
+      const formatted = formatTime(ms);
+      displayHours.textContent = formatted.hours;
+      displayMinutes.textContent = formatted.minutes;
+      displaySeconds.textContent = formatted.seconds;
+      displayMilliseconds.textContent = formatted.milliseconds;
+
+      // 毫秒進度條 (0-999ms)
+      const progressPercent = ((ms % 1000) / 1000) * 100;
+      techProgress.style.width = `${progressPercent}%`;
+    }
+
+    // 依據流程圖狀態更新 UI 風格與指示標籤
+    function updateFlowVisualizer(state) {
+      // 重置所有流程節點高亮
+      [flowNodeInit, flowNodeClock, flowNodePause].forEach(el => {
+        el.className = 'p-2.5 rounded-lg border border-tech-border bg-tech-surface/30 text-slate-400 transition-all';
+      });
+
+      if (state === 'INIT') {
+        currentStateBadge.textContent = 'A: 首頁 (重置 Disabled)';
+        currentStateBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700';
+        flowNodeInit.className = 'p-2.5 rounded-lg border border-cyan-500/50 bg-cyan-500/10 text-cyan-300 shadow-sm transition-all';
+
+        systemLed.className = 'w-2 h-2 rounded-full bg-slate-500 animate-pulse';
+        systemStatusText.textContent = 'STANDBY';
+        systemStatusText.className = 'text-slate-300 font-medium tracking-wide';
+      } else if (state === 'CLOCK') {
+        currentStateBadge.textContent = 'Clock: 計時中 (開始→暫停, 重置 Enabled)';
+        currentStateBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/70 text-emerald-400 border border-emerald-500/40';
+        flowNodeClock.className = 'p-2.5 rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 shadow-sm transition-all';
+
+        systemLed.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+        systemStatusText.textContent = 'RUNNING';
+        systemStatusText.className = 'text-emerald-400 font-medium tracking-wide';
+      } else if (state === 'PAUSE') {
+        currentStateBadge.textContent = 'Pause: 暫停 (暫停→開始, 可重置/繼續)';
+        currentStateBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-amber-950/70 text-amber-400 border border-amber-500/40';
+        flowNodePause.className = 'p-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300 shadow-sm transition-all';
+
+        systemLed.className = 'w-2 h-2 rounded-full bg-amber-400';
+        systemStatusText.textContent = 'PAUSED';
+        systemStatusText.className = 'text-amber-400 font-medium tracking-wide';
+      }
+    }
+
+    // 啟動計時 (Start)
+    function startTimer() {
+      isRunning = true;
+      startTime = Date.now() - elapsedTime;
+      timerInterval = setInterval(() => {
+        elapsedTime = Date.now() - startTime;
+        updateDisplay(elapsedTime);
+      }, 10);
+
+      // 按鈕狀態變更：「開始」變成「暫停」
+      btnToggleText.textContent = '暫停計時';
+      btnToggle.className = 'relative group py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400 glow-amber active:scale-[0.98]';
+      btnToggleIcon.innerHTML = `
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+        </svg>
+      `;
+
+      // 流程規定：重置按鈕變成 enabled
+      setResetButtonEnabled(true);
+      btnLap.disabled = false;
+
+      updateFlowVisualizer('CLOCK');
+      playBeep(620, 0.06);
+    }
+
+    // 暫停計時 (Pause)
+    function pauseTimer() {
+      isRunning = false;
+      clearInterval(timerInterval);
+
+      // 按鈕狀態變更：「暫停」變成「開始」
+      btnToggleText.textContent = '繼續計時';
+      btnToggle.className = 'relative group py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border bg-cyan-500 hover:bg-cyan-400 text-slate-950 border-cyan-400 glow-cyan active:scale-[0.98]';
+      btnToggleIcon.innerHTML = `
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      `;
+
+      // 重置按鈕依然保持 enabled（可選擇歸零，也可選擇繼續）
+      setResetButtonEnabled(true);
+      btnLap.disabled = true;
+
+      updateFlowVisualizer('PAUSE');
+      playBeep(440, 0.08);
+    }
+
+    // 停止並歸零 (Reset)
+    function resetTimer() {
+      // 停止時鐘並歸零
+      clearInterval(timerInterval);
+      isRunning = false;
+      elapsedTime = 0;
+      lastLapTime = 0;
+      lapCount = 0;
+
+      updateDisplay(0);
+      techProgress.style.width = '0%';
+
+      // 主按鈕重設回「開始」
+      btnToggleText.textContent = '開始計時';
+      btnToggle.className = 'relative group py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border bg-cyan-500 hover:bg-cyan-400 text-slate-950 border-cyan-400 glow-cyan active:scale-[0.98]';
+      btnToggleIcon.innerHTML = `
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      `;
+
+      // 流程規定：重置按鈕變成 disabled
+      setResetButtonEnabled(false);
+      btnLap.disabled = true;
+
+      // 清空計圈列表
+      lapList.innerHTML = '';
+      lapSection.classList.add('hidden');
+
+      updateFlowVisualizer('INIT');
+      playBeep(330, 0.12, 'square');
+    }
+
+    // 控制重置按鈕的啟用/禁用外觀與事件狀態
+    function setResetButtonEnabled(enabled) {
+      btnReset.disabled = !enabled;
+      if (enabled) {
+        btnReset.className = 'py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border border-rose-500/60 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] cursor-pointer';
+      } else {
+        btnReset.className = 'py-3.5 px-6 rounded-xl font-medium tracking-wider text-sm sm:text-base flex items-center justify-center gap-2 transition-all duration-200 border border-tech-border bg-tech-surface/40 text-slate-500 cursor-not-allowed disabled:opacity-40 disabled:hover:bg-tech-surface/40 active:scale-[0.98]';
+      }
+    }
+
+    // 計圈記錄 (Lap)
+    function recordLap() {
+      if (!isRunning) return;
+      lapCount++;
+      const currentLapDuration = elapsedTime - lastLapTime;
+      lastLapTime = elapsedTime;
+
+      const fCurrent = formatTime(currentLapDuration);
+      const fTotal = formatTime(elapsedTime);
+
+      lapSection.classList.remove('hidden');
+
+      const lapRow = document.createElement('div');
+      lapRow.className = 'flex justify-between items-center py-1.5 px-2 rounded bg-tech-surface/50 border border-slate-700/50 text-slate-300';
+      lapRow.innerHTML = `
+        <span class="text-cyan-400 font-bold">#${String(lapCount).padStart(2, '0')}</span>
+        <span>+${fCurrent.minutes}:${fCurrent.seconds}.${fCurrent.milliseconds}</span>
+        <span class="text-slate-400">${fTotal.hours}:${fTotal.minutes}:${fTotal.seconds}.${fTotal.milliseconds}</span>
+      `;
+
+      lapList.insertBefore(lapRow, lapList.firstChild);
+      playBeep(980, 0.04);
+    }
+
+    // 綁定主按鈕點擊：未運行則開始，運行中則暫停
+    btnToggle.addEventListener('click', () => {
+      if (isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    });
+
+    // 綁定重置按鈕點擊
+    btnReset.addEventListener('click', () => {
+      if (!btnReset.disabled) {
+        resetTimer();
+      }
+    });
+
+    // 綁定計圈按鈕點擊
+    btnLap.addEventListener('click', recordLap);
+
+    // 支援鍵盤熱鍵操作
+    window.addEventListener('keydown', (e) => {
+      // 避免與其他輸入干擾
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isRunning) pauseTimer();
+        else startTimer();
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        if (!btnReset.disabled) resetTimer();
+      } else if (e.code === 'KeyL') {
+        e.preventDefault();
+        if (isRunning) recordLap();
+      }
+    });
+
+    // 初始狀態建立
+    updateFlowVisualizer('INIT');
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"480c9d8468c44ad3bed3c74fbcc6d6f3","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
